@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skemersgotdox</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+        }
+        .sidebar {
+            width: 200px;
+            background-color: #333;
+            color: white;
+            padding: 15px;
+            display: none;  /* Initially hidden */
+        }
+        .content {
+            flex-grow: 1;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #keyOutput {
+            font-size: 1.2em;
+            margin-top: 20px;
+            color: #132fcc;
+        }
+        #dashboard {
+            display: none;
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 20px;
+            background-color: #f9f9f9;
+            width: 300px;
+            margin: 20px auto;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #dashboard button {
+            margin-top: 10px;
+        }
+        #successMessage {
+            color: green;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <h2>Stock</h2>
+        <div id="stockDisplay">Loading...</div>
+    </div>
+    <div class="content">
+        <h1>Key Generator</h1>
+        <div>
+            <input type="radio" id="gamez" name="keyType" value="GAMEZ" checked>
+            <label for="gamez">Generate key for GAMEZ</label><br>
+            <input type="radio" id="upgrade" name="keyType" value="UPGRADE_STANDARD">
+            <label for="upgrade">Upgrade Standard</label><br>
+            <input type="radio" id="vip" name="keyType" value="VIP">
+            <label for="vip">VIP</label>
+        </div>
+        <input type="text" id="userName" placeholder="Enter your name"><br>
+        <button onclick="generateKey()">Generate Key</button>
+        <div id="keyOutput"></div>
+        <div id="dashboard">
+            <p id="keyDisplay"></p>
+            <button onclick="redeemKey()">Redeem</button>
+        </div>
+        <div id="successMessage"></div>
+    </div>
+
+    <script>
+        const webhookURL = 'https://canary.discord.com/api/webhooks/1252719889580560394/xivAE_dVHwiumdtVdiR9L5rPJpm9cn2IXyMtz7n-qJJMGKN9wzDtpPn2cHeJ-bUTlANC';  // Replace with your Discord webhook URL
+        const discordInviteURL = 'https://discord.gg/97Uvrm3skR';  // Replace with your Discord invite link
+        const stockURL = 'https://canary.discord.com/channels/1238115842000945272/1252466262098051173';  // Replace with your server URL to fetch stock data
+
+        let currentKey = '';
+
+        function fetchStockData() {
+            fetch(stockURL)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('stockDisplay').innerText = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    console.error('Error fetching stock data:', error);
+                    document.getElementById('stockDisplay').innerText = 'Failed to load stock data';
+                });
+        }
+
+        function generateKey() {
+            const userName = document.getElementById('userName').value.trim();
+            if (!userName) {
+                alert('Please enter your name.');
+                return;
+            }
+
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            const keyType = document.querySelector('input[name="keyType"]:checked').value;
+
+            if (keyType === 'UPGRADE_STANDARD' || keyType === 'VIP') {
+                window.location.href = discordInviteURL;
+                return;
+            }
+
+            let key = keyType;
+            for (let i = 0; i < 11; i++) {
+                key += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            currentKey = key;
+            document.getElementById('keyOutput').innerText = `Generated Key: ${key}`;
+            document.getElementById('keyDisplay').innerText = `Key: ${key}`;
+            document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('successMessage').innerText = '';
+
+            sendDiscordAlert(`${userName} generated a key: ${key}`);
+        }
+
+        function redeemKey() {
+            const userName = document.getElementById('userName').value.trim();
+            if (!userName) {
+                alert('Please enter your name.');
+                return;
+            }
+
+            const blob = new Blob([currentKey], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'key.txt';
+            link.click();
+            
+            document.getElementById('successMessage').innerText = 'Key redeemed successfully!';
+
+            sendDiscordAlert(`${userName} redeemed the key: ${currentKey}`);
+        }
+
+        function sendDiscordAlert(message) {
+            fetch(webhookURL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content: message })
+            }).then(response => {
+                if (!response.ok) {
+                    console.error('Failed to send alert to Discord');
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        // Show the sidebar and fetch stock data on page load
+        document.getElementById('sidebar').style.display = 'block';
+        fetchStockData();
+    </script>
+</body>
+</html>
